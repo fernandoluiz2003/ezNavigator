@@ -1,0 +1,5 @@
+selenium >= 4.23.1
+webdriver-manager>=3.8.6
+undetected-chromedriver>=3.5.5
+pyautogui>=0.9.53
+pillow>=10.4.0
