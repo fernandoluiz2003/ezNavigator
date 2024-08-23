@@ -15,7 +15,7 @@ setup(
     description='Methods that helps when coding a web application',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
-    url='https://github.com/Nando2003/db2excel.git',
+    url='https://github.com/fernandoluiz2003/ezNavigator',
     install_requires=parse_requirements('requirements.txt'),
     author='Fernando Fontes',
     author_email='nandofontes30@gmail.com',
