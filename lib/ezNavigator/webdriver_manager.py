@@ -121,6 +121,7 @@ class WebDriverManager:
         return None
 
     def find_img(
+        self,
         image_paths : str | list,
         search_time  : int,
         confidence : float = 0.7,
