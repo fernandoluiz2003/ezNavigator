@@ -6,8 +6,8 @@ def parse_requirements(filename:str) -> list:
         return [line.strip() for line in file.readlines() if line.strip()]
 
 setup(
-    name='selenium_navigator',
-    version='0.1',
+    name='ezNavigator',
+    version='0.2',
     packages=find_packages(where='lib'),
     package_dir={'' : 'lib'},
     include_package_data=True,
