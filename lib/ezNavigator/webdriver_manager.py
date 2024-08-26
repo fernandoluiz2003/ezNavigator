@@ -42,7 +42,9 @@ class WebDriverManager:
         self, 
         driver: WebDriver,
         by    :       str, 
-        param :       str
+        param :       str,
+        
+        be_clickable: bool = False
     ) -> WebElement:
         
         by_mapping = {
@@ -61,6 +63,16 @@ class WebDriverManager:
         if by is None:
             raise ValueError(f"Invalid locator type: {by}")
         
+        if be_clickable == True:
+            return WebDriverWait(
+                driver  =        driver,
+                timeout = self.wait_time
+            ).until(
+                expected_conditions.element_to_be_clickable(
+                    (by, param)
+                )
+            )
+            
         return WebDriverWait(
             driver  =        driver,
             timeout = self.wait_time
@@ -74,7 +86,7 @@ class WebDriverManager:
         self,
         driver : WebDriver,
         by     : str= None,
-        param  : str= None,
+        param  : str= None
     ):
         
         if not(by and param):
