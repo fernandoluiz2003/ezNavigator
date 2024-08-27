@@ -1,1 +1,1 @@
-from .webdriver_manager import WebDriverManager
+from .webdriver_manager import Manager

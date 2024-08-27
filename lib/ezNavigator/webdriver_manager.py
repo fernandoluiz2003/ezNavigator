@@ -3,116 +3,93 @@ from selenium.webdriver import ChromeOptions
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions
+from selenium.common.exceptions import TimeoutException
 
 import undetected_chromedriver as uc
 from undetected_chromedriver.webelement import WebElement
 
+from pyautogui import locateCenterOnScreen
 from time import sleep
 
-import json
-import pyautogui
+from pathlib import Path
+from typing  import Union, Optional, Literal, List, Dict, Tuple
 
-class WebDriverManager:
+import json
+
+class Manager:
     
-    def __init__(self):
-        self.wait_time = 10
-        
-    def add_options(self) -> ChromeOptions:
+    def add_options(self) -> ChromeOptions:   
         return uc.ChromeOptions()
     
-    def get_driver(
-        self, 
-        driver_path: str = None, 
-        chrome_options: ChromeOptions = None
-    ) -> WebDriver: 
+    def get_driver(self, driverexe_path: Union[Path, str], chrome_options: ChromeOptions, performance_logs: bool = False) -> Optional[WebDriver]:
         
-        if chrome_options is None:
-            chrome_options = uc.ChromeOptions()
+        try: 
+            driverexe_path = Path(driverexe_path) if isinstance(driverexe_path, str) else driverexe_path
             
-        chrome_options.set_capability(
-            "goog:loggingPrefs", {"performance": "ALL"}
-        )
+            if driverexe_path.is_file():
+                
+                if performance_logs:
+                    chrome_options.set_capability(
+                        "goog:loggingPrefs", {"performance": "ALL"}
+                    )
+
+                return uc.Chrome(chrome_options, driver_executable_path = driverexe_path)
         
-        return uc.Chrome(
-            driver_executable_path =   driver_path,
-            options                = chrome_options
-        )
-    
-    def search_by_element(
-        self, 
-        driver: WebDriver,
-        by    :       str, 
-        param :       str,
+        finally:
+            return None
         
-        be_clickable: bool = False
-    ) -> WebElement:
-        
+    def search_by_element_or_null(self, driver: WebDriver, by: Literal['id', 'name', 'xpath', 'link_text', 'partial_link_text', 'tag_name', 'class_name', 'css_selector'], param: str, timeout: int) -> Optional[WebElement]:
         by_mapping = {
             "id"               : By.ID,
             "name"             : By.NAME,
             "xpath"            : By.XPATH,
-            "link_text"        : By.LINK_TEXT,
-            "partial_link_text": By.PARTIAL_LINK_TEXT,
             "tag_name"         : By.TAG_NAME,
+            "link_text"        : By.LINK_TEXT,
             "class_name"       : By.CLASS_NAME,
             "css_selector"     : By.CSS_SELECTOR,
+            "partial_link_text": By.PARTIAL_LINK_TEXT,
         }
         
-        by = by_mapping.get(by.lower())
+        by = by_mapping.get(by.lower(), None)
         
         if by is None:
             raise ValueError(f"Invalid locator type: {by}")
         
-        if be_clickable == True:
-            return WebDriverWait(
-                driver  =        driver,
-                timeout = self.wait_time
-            ).until(
-                expected_conditions.element_to_be_clickable(
+        try:
+            return WebDriverWait(driver, timeout).until(
+                expected_conditions.presence_of_element_located(
                     (by, param)
                 )
             )
             
-        return WebDriverWait(
-            driver  =        driver,
-            timeout = self.wait_time
-        ).until(
-            expected_conditions.presence_of_element_located(
-                (by, param)
-            )
-        )
-    
-    def change_frame(
-        self,
-        driver : WebDriver,
-        by     : str= None,
-        param  : str= None
-    ):
+        except TimeoutException:
+            return None
         
-        if not(by and param):
+    def change_iframe(self, driver: WebDriver, by: Optional[Literal['id', 'name', 'xpath', 'link_text', 'partial_link_text', 'tag_name', 'class_name', 'css_selector']] = None, param: Optional[str] = None) -> None:
+        if by is None or param is None:
             driver.switch_to.default_content()
+            return
         
-        else:
-            driver.switch_to.frame(
-                self.search_by_element(
-                    driver, by, param
-                )
-            )
+        frame_element: WebElement = self.search_by_element_or_null(driver, by, param)
+        driver.switch_to.frame(frame_element)
     
-    def get_headers(
-        self, 
-        driver           :   WebDriver,
-        headers_required : list = None,
-        keys_required    : list = None,
-        cookies_required : list = None
-        
-    ) -> dict | None:
-        
-        logs = driver.get_log('performace')
-        
-        for entry in logs:
-            log = json.loads(entry['message'])['message']
+    def get_headers(self, driver: WebDriver, headers_required: Optional[List[str]] = None, keys_required: Optional[List[str]] = None, cookies_required: Optional[List[str]] = None) -> Optional[Dict[str, str]]:
+        if not self._check_capability(driver, "goog:loggingPrefs", {"performance": "ALL"}):
+            raise RuntimeError("Driver was not configured to record logs")
+
+        try:
+            logs = driver.get_log('performance')
             
+        except Exception:
+            return None
+
+        for entry in logs:
+            try:
+                log = json.loads(entry['message'])['message']
+                
+            except (KeyError, json.JSONDecodeError):
+                continue
+
             if log.get('method') == 'Network.requestWillBeSentExtraInfo':
                 params = log.get('params', {})
                 
@@ -129,31 +106,30 @@ class WebDriverManager:
                     continue
                 
                 return headers
-        
+
         return None
 
-    def find_img(
-        self,
-        image_paths : str | list,
-        search_time  : int,
-        confidence : float = 0.7,
-        grayscale  : bool = False
-    ) -> tuple | None:
-        if isinstance(image_paths, str):
-            image_paths = [image_paths]
-        
+    def search_image_or_null(self, image_paths: Union[str, List[str], Path, List[Path]], search_time: int, confidence: float = 0.7, grayscale: bool = False) -> Optional[Tuple[int, int]]:
+        if isinstance(image_paths, (str, Path)):
+            image_paths = [Path(image_paths).as_posix()]
+            
+        elif isinstance(image_paths, list):
+            image_paths = [Path(p).as_posix() if isinstance(p, (str, Path)) else p for p in image_paths]
+    
         wait_time_image = 0
         while wait_time_image <= search_time:
             try:
                 for image_path in image_paths:
-                    locate_image = pyautogui.locateCenterOnScreen(
-                        image = image_path,
-                        grayscale = grayscale,
+                    
+                    locate_image = locateCenterOnScreen(
+                        image      = image_path,
+                        grayscale  = grayscale,
                         confidence = confidence
                     )
+                    
                     return locate_image
                     
-            except Exception as e:
+            except Exception:
                 pass
             
             finally:
@@ -161,3 +137,6 @@ class WebDriverManager:
                 sleep(1)
         
         return None
+        
+    def _check_capability(self, driver: WebDriver, capability_name: str, expected_value) -> bool:
+        return driver.capabilities.get(capability_name) == expected_value
