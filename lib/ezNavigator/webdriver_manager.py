@@ -109,7 +109,7 @@ class Manager:
 
         return None
 
-    def search_image_or_null(self, image_paths: Union[str, List[str], Path, List[Path]], search_time: int, confidence: float = 0.7, grayscale: bool = False) -> Optional[Tuple[int, int]]:
+    def search_by_image_or_null(self, image_paths: Union[str, List[str], Path, List[Path]], search_time: int, confidence: float = 0.7, grayscale: bool = False) -> Optional[Tuple[int, int]]:
         if isinstance(image_paths, (str, Path)):
             image_paths = [Path(image_paths).as_posix()]
             
