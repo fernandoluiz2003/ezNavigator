@@ -8,7 +8,7 @@ from selenium.common.exceptions import TimeoutException
 import undetected_chromedriver as uc
 from undetected_chromedriver.webelement import WebElement
 
-from pyautogui import locateCenterOnScreen
+from pyautogui import locateCenterOnScreen, Point
 from time import sleep
 
 from pathlib import Path
@@ -109,7 +109,7 @@ class Manager:
 
         return None
 
-    def search_by_image_or_null(self, image_paths: Union[str, List[str], Path, List[Path]], search_time: int, confidence: float = 0.7, grayscale: bool = False) -> Optional[Tuple[int, int]]:
+    def search_by_image_or_null(self, image_paths: Union[str, List[str], Path, List[Path]], search_time: int, confidence: float = 0.7, grayscale: bool = False) -> Optional[Point]:
         if isinstance(image_paths, (str, Path)):
             image_paths = [Path(image_paths).as_posix()]
             
