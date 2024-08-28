@@ -1,5 +1,4 @@
 from selenium.webdriver.common.by import By
-from selenium.webdriver import ChromeOptions
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions
@@ -17,12 +16,16 @@ from typing  import Union, Optional, Literal, List, Dict, Tuple
 import os
 import json
 
+from PIL import Image
+import io
+
+
 class Manager:
     
-    def add_options(self) -> ChromeOptions:   
+    def add_options(self) -> uc.ChromeOptions:   
         return uc.ChromeOptions()
     
-    def get_driver(self, driverexe_path: Union[Path, str], chrome_options: ChromeOptions, browser_logs: bool = False, performance_logs: bool = False) -> Optional[WebDriver]:
+    def get_driver(self, driverexe_path: Union[Path, str], chrome_options: uc.ChromeOptions, browser_logs: bool = False, performance_logs: bool = False) -> Optional[WebDriver]:
         driverexe_path = Path(driverexe_path) if isinstance(driverexe_path, str) else driverexe_path
         
         if driverexe_path.is_file():
@@ -39,7 +42,7 @@ class Manager:
 
             return uc.Chrome(chrome_options, driver_executable_path = driverexe_path)
         
-    def search_by_element_or_null(self, driver: WebDriver, by: Literal['id', 'name', 'xpath', 'link_text', 'partial_link_text', 'tag_name', 'class_name', 'css_selector'], param: str, timeout: int) -> Optional[WebElement]:
+    def search_by_element_or_null(self, driver: WebDriver, by: Literal['id', 'name', 'xpath', 'link_text', 'partial_link_text', 'tag_name', 'class_name', 'css_selector'], param: str, timeout: int = 10) -> Optional[WebElement]:
         by_mapping = {
             "id"               : By.ID,
             "name"             : By.NAME,
@@ -51,17 +54,19 @@ class Manager:
             "partial_link_text": By.PARTIAL_LINK_TEXT,
         }
         
-        by = by_mapping.get(by.lower(), None)
-        
-        if by is None:
+        if by not in by_mapping:
             raise ValueError(f"Invalid locator type: {by}")
+    
+        by = by_mapping[by]
         
         try:
-            return WebDriverWait(driver, timeout).until(
+            element = WebDriverWait(driver, timeout).until(
                 expected_conditions.presence_of_element_located(
                     (by, param)
                 )
             )
+            
+            return element
             
         except(TimeoutException, NoSuchElementException, ):
             return None
@@ -140,21 +145,20 @@ class Manager:
         
         return None
     
-    def capture_screenshot(self, driver: WebDriver, filename: str, download_path: Optional[str] = None, region: Optional[Tuple[int, int, int, int]] = None):
-        screenshot = driver.get_screenshot_as_png()
+    def capture_screenshot(self, driver: WebDriver, filename: str, download_path: Optional[str] = None, region: Optional[Tuple[int, int, int, int]] = None) -> None:
+        screenshot_bytes = driver.get_screenshot_as_png()
+        
+        screenshot_image = Image.open(io.BytesIO(screenshot_bytes))
         
         if region:
-            from PIL import Image
-            import io
-            screenshot = Image.open(io.BytesIO(screenshot))
-            screenshot = screenshot.crop(region)
+            screenshot_image = screenshot_image.crop(region)
         
         if download_path:
             download_path = os.path.join(download_path, filename)
         else:
             download_path = filename
-
-        screenshot.save(download_path)
+            
+        screenshot_image.save(download_path)
     
     def scroll_page(self, driver: WebDriver, direction: Literal['up', 'down'] = 'down', amount: int = 300) -> None:
         if direction == 'down':
