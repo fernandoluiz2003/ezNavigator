@@ -212,17 +212,7 @@ class Manager:
         except TimeoutException:
             print("No alert present")
 
-    def interact_with_popup(self, image_path: Union[str, Path], action: Literal['click', 'close'] = 'click', search_time: int = 10) -> bool:
-        location = self.search_by_image_or_null(image_path, search_time)
-        if location:
-            if action == 'click':
-                pyautogui.click(location)
-            elif action == 'close':
-                pyautogui.press('esc')
-            return True
-        return False
-
-    def navigate_and_interact(self, image: Union[str, Path, pyautogui.Point], action: Literal['click', 'double_click'] = 'click', search_time: int = 10) -> bool:
+    def navigate_and_interact(self, image: Union[str, Path, pyautogui.Point], action: Literal['click', 'close', 'double_click'] = 'click', search_time: int = 10) -> bool:
         if isinstance(image, (str, Path)):
             location = self.search_by_image_or_null(image, search_time)
             
@@ -232,6 +222,8 @@ class Manager:
         if location:
             if action == 'click':
                 pyautogui.click(location)
+            elif action == 'close':
+                pyautogui.press('esc')
             elif action == 'double_click':
                 pyautogui.doubleClick(location)
             return True
