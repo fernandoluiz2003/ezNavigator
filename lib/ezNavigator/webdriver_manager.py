@@ -46,8 +46,8 @@ class Manager:
                 )
 
             return uc.Chrome(chrome_options, driver_executable_path = driverexe_path)
-        
-    def search_by_element_or_null(self, driver: WebDriver, by: Literal['id', 'name', 'xpath', 'link_text', 'partial_link_text', 'tag_name', 'class_name', 'css_selector'], param: str, timeout: int = 10, null: bool = True) -> Optional[WebElement]:
+    
+    def search_by_element(self, driver: WebDriver, by: Literal['id', 'name', 'xpath', 'link_text', 'partial_link_text', 'tag_name', 'class_name', 'css_selector'], param: str, timeout: int = 10) -> Optional[WebElement]:
         by_mapping = {
             "id"               : By.ID,
             "name"             : By.NAME,
@@ -63,21 +63,21 @@ class Manager:
             raise ValueError(f"Invalid locator type: {by}")
     
         by = by_mapping[by]
-    
-        try:
-            element = WebDriverWait(driver, timeout).until(
-                expected_conditions.presence_of_element_located(
-                    (by, param)
-                )
+        
+        element = WebDriverWait(driver, timeout).until(
+            expected_conditions.presence_of_element_located(
+                (by, param)
             )
-            
+        )
+        
+        return element
+
+    def search_by_element_or_null(self, driver: WebDriver, by: Literal['id', 'name', 'xpath', 'link_text', 'partial_link_text', 'tag_name', 'class_name', 'css_selector'], param: str, timeout: int = 10) -> Optional[WebElement]:
+        try:
+            element = self.search_by_element(driver, by, param, timeout)
             return element
             
-        except Exception as e:
-            
-            if not null:
-                raise e
-            
+        except(TimeoutException, NoSuchElementException, ):
             return None
         
     def change_iframe(self, driver: WebDriver, by: Optional[Literal['id', 'name', 'xpath', 'link_text', 'partial_link_text', 'tag_name', 'class_name', 'css_selector']] = None, param: Optional[str] = None) -> None:
