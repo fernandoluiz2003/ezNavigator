@@ -26,7 +26,7 @@ class Manager:
         return uc.ChromeOptions()
     
     def get_driver(self, driverexe_path: Union[Path, str], chrome_options: uc.ChromeOptions, browser_logs: bool = False, performance_logs: bool = False) -> Optional[WebDriver]:
-        driverexe_path = Path(driverexe_path) if isinstance(driverexe_path, str) else driverexe_path
+        driverexe_path = str(driverexe_path)
         
         if driverexe_path.is_file():
             
