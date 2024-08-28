@@ -3,17 +3,18 @@ from selenium.webdriver import ChromeOptions
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 import undetected_chromedriver as uc
 from undetected_chromedriver.webelement import WebElement
 
-from pyautogui import locateCenterOnScreen, Point
+import pyautogui
 from time import sleep
 
 from pathlib import Path
 from typing  import Union, Optional, Literal, List, Dict, Tuple
 
+import os
 import json
 
 class Manager:
@@ -21,22 +22,22 @@ class Manager:
     def add_options(self) -> ChromeOptions:   
         return uc.ChromeOptions()
     
-    def get_driver(self, driverexe_path: Union[Path, str], chrome_options: ChromeOptions, performance_logs: bool = False) -> Optional[WebDriver]:
+    def get_driver(self, driverexe_path: Union[Path, str], chrome_options: ChromeOptions, browser_logs: bool = False, performance_logs: bool = False) -> Optional[WebDriver]:
+        driverexe_path = Path(driverexe_path) if isinstance(driverexe_path, str) else driverexe_path
         
-        try: 
-            driverexe_path = Path(driverexe_path) if isinstance(driverexe_path, str) else driverexe_path
+        if driverexe_path.is_file():
             
-            if driverexe_path.is_file():
-                
-                if performance_logs:
-                    chrome_options.set_capability(
-                        "goog:loggingPrefs", {"performance": "ALL"}
-                    )
+            if performance_logs:
+                chrome_options.set_capability(
+                    "goog:loggingPrefs", {"performance": "ALL"}
+                )
+            
+            if browser_logs:
+                chrome_options.set_capability(
+                    "goog:loggingPrefs", {"browser": "ALL"}
+                )
 
-                return uc.Chrome(chrome_options, driver_executable_path = driverexe_path)
-        
-        finally:
-            return None
+            return uc.Chrome(chrome_options, driver_executable_path = driverexe_path)
         
     def search_by_element_or_null(self, driver: WebDriver, by: Literal['id', 'name', 'xpath', 'link_text', 'partial_link_text', 'tag_name', 'class_name', 'css_selector'], param: str, timeout: int) -> Optional[WebElement]:
         by_mapping = {
@@ -62,7 +63,7 @@ class Manager:
                 )
             )
             
-        except TimeoutException:
+        except(TimeoutException, NoSuchElementException, ):
             return None
         
     def change_iframe(self, driver: WebDriver, by: Optional[Literal['id', 'name', 'xpath', 'link_text', 'partial_link_text', 'tag_name', 'class_name', 'css_selector']] = None, param: Optional[str] = None) -> None:
@@ -109,7 +110,7 @@ class Manager:
 
         return None
 
-    def search_by_image_or_null(self, image_paths: Union[str, List[str], Path, List[Path]], search_time: int, confidence: float = 0.7, grayscale: bool = False) -> Optional[Point]:
+    def search_by_image_or_null(self, image_paths: Union[str, List[str], Path, List[Path]], search_time: int, region: Optional[Tuple[int, int, int, int]] = None, confidence: float = 0.7, grayscale: bool = False) -> Optional[pyautogui.Point]:
         if isinstance(image_paths, (str, Path)):
             image_paths = [Path(image_paths).as_posix()]
             
@@ -121,15 +122,16 @@ class Manager:
             try:
                 for image_path in image_paths:
                     
-                    locate_image = locateCenterOnScreen(
+                    locate_image = pyautogui.locateCenterOnScreen(
                         image      = image_path,
+                        region     =    region,
                         grayscale  = grayscale,
                         confidence = confidence
                     )
                     
                     return locate_image
                     
-            except Exception:
+            except pyautogui.ImageNotFoundException:
                 pass
             
             finally:
@@ -137,6 +139,80 @@ class Manager:
                 sleep(1)
         
         return None
+    
+    def capture_screenshot(self, driver: WebDriver, filename: str, download_path: Optional[str] = None, region: Optional[Tuple[int, int, int, int]] = None):
+        screenshot = driver.get_screenshot_as_png()
         
+        if region:
+            from PIL import Image
+            import io
+            screenshot = Image.open(io.BytesIO(screenshot))
+            screenshot = screenshot.crop(region)
+        
+        if download_path:
+            download_path = os.path.join(download_path, filename)
+        else:
+            download_path = filename
+
+        screenshot.save(download_path)
+    
+    def scroll_page(self, driver: WebDriver, direction: Literal['up', 'down'] = 'down', amount: int = 300) -> None:
+        if direction == 'down':
+            driver.execute_script(f"window.scrollBy(0, {amount});")
+        elif direction == 'up':
+            driver.execute_script(f"window.scrollBy(0, -{amount});")
+    
+    def execute_script(self, driver: WebDriver, script: str, *args) -> any:
+        return driver.execute_script(script, *args)
+
+    def get_console_logs(self, driver: WebDriver) -> List[Dict[str, str]]:
+        if not self._check_capability(driver, "goog:loggingPrefs", {"browser": "ALL"}):
+            raise RuntimeError("Driver was not configured to record console logs")
+
+        try:
+            logs = driver.get_log('browser')
+            return logs
+        
+        except Exception:
+            return []
+
+    def get_local_storage(self, driver: WebDriver) -> dict:
+        return driver.execute_script("return window.localStorage;")
+
+    def set_local_storage(self, driver: WebDriver, key: str, value: str) -> None:
+        driver.execute_script(f"window.localStorage.setItem('{key}', '{value}');")
+    
+    def accept_alert(self, driver: WebDriver) -> None:
+        try:
+            WebDriverWait(driver, 10).until(expected_conditions.alert_is_present()).accept()
+        except TimeoutException:
+            print("No alert present")
+
+    def dismiss_alert(self, driver: WebDriver) -> None:
+        try:
+            WebDriverWait(driver, 10).until(expected_conditions.alert_is_present()).dismiss()
+        except TimeoutException:
+            print("No alert present")
+
+    def interact_with_popup(self, image_path: Union[str, Path], action: Literal['click', 'close'] = 'click', search_time: int = 10) -> bool:
+        location = self.search_by_image_or_null(image_path, search_time)
+        if location:
+            if action == 'click':
+                pyautogui.click(location)
+            elif action == 'close':
+                pyautogui.press('esc')
+            return True
+        return False
+
+    def navigate_and_interact(self, driver: WebDriver, image_path: Union[str, Path], action: Literal['click', 'double_click'] = 'click', search_time: int = 10) -> bool:
+        location = self.search_by_image_or_null(image_path, search_time)
+        if location:
+            if action == 'click':
+                pyautogui.click(location)
+            elif action == 'double_click':
+                pyautogui.doubleClick(location)
+            return True
+        return False
+
     def _check_capability(self, driver: WebDriver, capability_name: str, expected_value) -> bool:
         return driver.capabilities.get(capability_name) == expected_value
