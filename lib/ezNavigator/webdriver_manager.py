@@ -22,6 +22,9 @@ import io
 
 class Manager:
     
+    performance_logs_mode = False
+    browser_logs_mode = False
+    
     def add_options(self) -> uc.ChromeOptions:   
         return uc.ChromeOptions()
     
@@ -31,11 +34,13 @@ class Manager:
         if os.path.isfile(driverexe_path):
             
             if performance_logs is True:
+                self.performance_logs_mode = True
                 chrome_options.set_capability(
                     "goog:loggingPrefs", {"performance": "ALL"}
                 )
             
             if browser_logs is True:
+                self.browser_logs_mode = True
                 chrome_options.set_capability(
                     "goog:loggingPrefs", {"browser": "ALL"}
                 )
@@ -80,7 +85,7 @@ class Manager:
         driver.switch_to.frame(frame_element)
     
     def get_headers(self, driver: WebDriver, headers_required: Optional[List[str]] = None, keys_required: Optional[List[str]] = None, cookies_required: Optional[List[str]] = None) -> Optional[Dict[str, str]]:
-        if not self._check_capability(driver, "goog:loggingPrefs", {"performance": "ALL"}):
+        if self.performance_logs_mode == False:
             raise RuntimeError("Driver was not configured to record logs")
 
         try:
@@ -170,7 +175,7 @@ class Manager:
         return driver.execute_script(script, *args)
 
     def get_console_logs(self, driver: WebDriver) -> List[Dict[str, str]]:
-        if not self._check_capability(driver, "goog:loggingPrefs", {"browser": "ALL"}):
+        if self.browser_logs_mode == False:
             raise RuntimeError("Driver was not configured to record console logs")
 
         try:
