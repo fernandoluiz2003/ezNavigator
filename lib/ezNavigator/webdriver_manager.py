@@ -218,7 +218,10 @@ class Manager:
             return True
         return False
 
-    def navigate_and_interact(self, image_path: Union[str, Path], coord: Optional[pyautogui.Point] = None, action: Literal['click', 'double_click'] = 'click', search_time: int = 10) -> bool:
+    def navigate_and_interact(self, image_path: Optional[Union[str, Path]] = None, coord: Optional[pyautogui.Point] = None, action: Literal['click', 'double_click'] = 'click', search_time: int = 10) -> bool:
+        if image_path is None and coord is None:
+            raise TypeError()
+        
         if coord is None:
             location = self.search_by_image_or_null(image_path, search_time)
         else:
