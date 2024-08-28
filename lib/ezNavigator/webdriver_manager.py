@@ -228,5 +228,16 @@ class Manager:
             return True
         return False
 
+    def center_mouse_and_click(self, click_mouse: Optional[bool] = True) -> None:
+        screen_width, screen_height = pyautogui.size()
+        
+        center_x = screen_width // 2
+        center_y = screen_height // 2
+        
+        pyautogui.moveTo(center_x, center_y)
+        
+        if click_mouse:
+            pyautogui.click()
+    
     def _check_capability(self, driver: WebDriver, capability_name: str, expected_value) -> bool:
         return driver.capabilities.get(capability_name) == expected_value
