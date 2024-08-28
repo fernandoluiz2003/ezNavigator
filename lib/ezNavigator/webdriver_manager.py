@@ -226,7 +226,7 @@ class Manager:
         if isinstance(image, (str, Path)):
             location = self.search_by_image_or_null(image, search_time)
             
-        elif isinstance(image, pyautogui.Point):
+        elif isinstance(image, (pyautogui.Point, tuple)):
             location = image
             
         if location:
