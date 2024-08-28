@@ -30,12 +30,12 @@ class Manager:
         
         if os.path.isfile(driverexe_path):
             
-            if performance_logs:
+            if performance_logs is True:
                 chrome_options.set_capability(
                     "goog:loggingPrefs", {"performance": "ALL"}
                 )
             
-            if browser_logs:
+            if browser_logs is True:
                 chrome_options.set_capability(
                     "goog:loggingPrefs", {"browser": "ALL"}
                 )
