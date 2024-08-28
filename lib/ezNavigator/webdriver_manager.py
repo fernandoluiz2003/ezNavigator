@@ -26,7 +26,7 @@ class Manager:
         return uc.ChromeOptions()
     
     def get_driver(self, driverexe_path: Union[Path, str], chrome_options: uc.ChromeOptions, browser_logs: bool = False, performance_logs: bool = False) -> Optional[WebDriver]:
-        driverexe_path = str(driverexe_path)
+        driverexe_path = Path(driverexe_path) if isinstance(driverexe_path, str) else driverexe_path
         
         if driverexe_path.is_file():
             
@@ -40,7 +40,7 @@ class Manager:
                     "goog:loggingPrefs", {"browser": "ALL"}
                 )
 
-            return uc.Chrome(chrome_options, driver_executable_path = driverexe_path)
+            return uc.Chrome(chrome_options, driver_executable_path = str(driverexe_path))
         
     def search_by_element_or_null(self, driver: WebDriver, by: Literal['id', 'name', 'xpath', 'link_text', 'partial_link_text', 'tag_name', 'class_name', 'css_selector'], param: str, timeout: int = 10) -> Optional[WebElement]:
         by_mapping = {
