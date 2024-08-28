@@ -151,19 +151,24 @@ class Manager:
         return None
     
     def capture_screenshot(self, driver: WebDriver, filename: str, download_path: Optional[str] = None, region: Optional[Tuple[int, int, int, int]] = None) -> None:
-        screenshot_bytes = driver.get_screenshot_as_png()
-        
-        screenshot_image = Image.open(io.BytesIO(screenshot_bytes))
+        screenshot = driver.get_screenshot_as_png()
         
         if region:
+            screenshot_image = Image.open(io.BytesIO(screenshot))
             screenshot_image = screenshot_image.crop(region)
+        else:
+            screenshot_image = Image.open(io.BytesIO(screenshot))
         
         if download_path:
+            if not filename.lower().endswith('.png'):
+                filename += '.png'
             download_path = os.path.join(download_path, filename)
         else:
+            if not filename.lower().endswith('.png'):
+                filename += '.png'
             download_path = filename
-            
-        screenshot_image.save(download_path)
+
+        screenshot_image.save(download_path, format='PNG')
     
     def scroll_page(self, driver: WebDriver, direction: Literal['up', 'down'] = 'down', amount: int = 300) -> None:
         if direction == 'down':
