@@ -218,8 +218,12 @@ class Manager:
             return True
         return False
 
-    def navigate_and_interact(self, driver: WebDriver, image_path: Union[str, Path], action: Literal['click', 'double_click'] = 'click', search_time: int = 10) -> bool:
-        location = self.search_by_image_or_null(image_path, search_time)
+    def navigate_and_interact(self, image_path: Union[str, Path], coord: Optional[pyautogui.Point] = None, action: Literal['click', 'double_click'] = 'click', search_time: int = 10) -> bool:
+        if coord is None:
+            location = self.search_by_image_or_null(image_path, search_time)
+        else:
+            location = coord
+            
         if location:
             if action == 'click':
                 pyautogui.click(location)
