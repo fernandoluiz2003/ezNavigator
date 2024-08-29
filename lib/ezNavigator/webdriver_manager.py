@@ -88,7 +88,7 @@ class Manager:
         frame_element: WebElement = self.search_by_element_or_null(driver, by, param)
         driver.switch_to.frame(frame_element)
     
-    def get_headers(self, driver: WebDriver, headers_required: Optional[List[str]] = None, keys_required: Optional[List[str]] = None, cookies_required: Optional[List[str]] = None, all_headers: bool = False) -> Optional[Union[Dict[str, str], List[Dict[str, str]]]]:
+    def get_headers(self, driver: WebDriver,headers_required: Optional[List[str]] = None, keys_required: Optional[List[str]] = None, cookies_required: Optional[List[str]] = None, all_headers: bool = False) -> Optional[Union[Dict[str, str], List[Dict[str, str]]]]:
         if self.performance_logs_mode == False:
             raise RuntimeError("Driver was not configured to record logs")
 
@@ -118,7 +118,7 @@ class Manager:
                 if headers_required and not all(header in headers for header in headers_required):
                     continue
                 
-                cookies = headers.get('Cookie', '')
+                cookies = headers.get('cookie', '')
                 if cookies_required and not all(cookie in cookies for cookie in cookies_required):
                     continue
                 
@@ -189,7 +189,7 @@ class Manager:
         return driver.execute_script(script, *args)
 
     def get_performance_logs(self, driver: WebDriver) -> List[Dict[str, str]]:
-        if self.browser_logs_mode == False:
+        if self.performance_logs_mode == False:
             raise RuntimeError("Driver was not configured to record console logs")
 
         try:
