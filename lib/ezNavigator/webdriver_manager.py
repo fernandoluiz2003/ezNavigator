@@ -188,6 +188,17 @@ class Manager:
     def execute_script(self, driver: WebDriver, script: str, *args) -> any:
         return driver.execute_script(script, *args)
 
+    def get_performance_logs(self, driver: WebDriver) -> List[Dict[str, str]]:
+        if self.browser_logs_mode == False:
+            raise RuntimeError("Driver was not configured to record console logs")
+
+        try:
+            logs = driver.get_log('performance')
+            return logs
+        
+        except Exception:
+            return []
+    
     def get_console_logs(self, driver: WebDriver) -> List[Dict[str, str]]:
         if self.browser_logs_mode == False:
             raise RuntimeError("Driver was not configured to record console logs")
