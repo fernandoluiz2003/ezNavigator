@@ -88,10 +88,12 @@ class Manager:
         frame_element: WebElement = self.search_by_element_or_null(driver, by, param)
         driver.switch_to.frame(frame_element)
     
-    def get_headers(self, driver: WebDriver, headers_required: Optional[List[str]] = None, keys_required: Optional[List[str]] = None, cookies_required: Optional[List[str]] = None) -> Optional[Dict[str, str]]:
+    def get_headers(self, driver: WebDriver, headers_required: Optional[List[str]] = None, keys_required: Optional[List[str]] = None, cookies_required: Optional[List[str]] = None, all_headers: bool = False) -> Optional[Union[Dict[str, str], List[Dict[str, str]]]]:
         if self.performance_logs_mode == False:
             raise RuntimeError("Driver was not configured to record logs")
 
+        list_headers = []
+        
         try:
             logs = driver.get_log('performance')
             
@@ -120,9 +122,12 @@ class Manager:
                 if cookies_required and not all(cookie in cookies for cookie in cookies_required):
                     continue
                 
-                return headers
+                if all_headers == False:
+                    return headers
+                else:
+                    list_headers.append(headers)
 
-        return None
+        return list_headers
 
     def search_by_image_or_null(self, image_paths: Union[str, List[str], Path, List[Path]], search_time: int, region: Optional[Tuple[int, int, int, int]] = None, confidence: float = 0.7, grayscale: bool = False) -> Optional[pyautogui.Point]:
         if isinstance(image_paths, (str, Path)):

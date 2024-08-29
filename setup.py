@@ -7,7 +7,7 @@ def parse_requirements(filename:str) -> list:
 
 setup(
     name='ezNavigator',
-    version='0.7.4',
+    version='0.7.5',
     packages=find_packages(where='lib'),
     package_dir={'' : 'lib'},
     include_package_data=True,
